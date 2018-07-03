@@ -34,6 +34,9 @@ export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const elm = this._elm.nativeElement as HTMLElement;
 
+    this._renderer.setStyle(elm, 'cursor', 'grab');
+    this._renderer.setStyle(elm, 'cursor', '-webkit-grab');
+
     this.hm = new Hammer(elm);
 
     this.sub$ = forkJoin(
