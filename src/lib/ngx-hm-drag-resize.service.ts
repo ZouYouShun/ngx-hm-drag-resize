@@ -1,6 +1,7 @@
-import { EventEmitter, Injectable, Renderer2, RendererFactory2 } from '@angular/core';
+import { EventEmitter, Injectable, Renderer2, RendererFactory2, Inject, PLATFORM_ID } from '@angular/core';
 import { fromEvent, Observable, Subject, merge, BehaviorSubject } from 'rxjs';
-import { finalize, switchMap, take, takeUntil, tap, map } from 'rxjs/operators';
+import { finalize, switchMap, take, takeUntil, tap, map, filter } from 'rxjs/operators';
+import { isPlatformBrowser } from '@angular/common';
 
 // tslint:disable-next-line:import-blacklist
 
@@ -45,9 +46,21 @@ export interface Size {
 })
 export class NgxHmDragResizeService {
 
+  isMobile: boolean;
   resize$ = new Subject();
+  nowFocusElm$ = new BehaviorSubject<HTMLElement>(null);
 
-  nowFocusElm = new BehaviorSubject<HTMLElement>(null);
+  get resizeFromPan$() {
+    return this.resize$.pipe(
+      filter(x => x === 'pan')
+    );
+  }
+
+  get resizeFromPinch$() {
+    return this.resize$.pipe(
+      filter(x => x === 'pinch')
+    );
+  }
 
   resizeDragElm: any[] = [
     {
@@ -93,15 +106,28 @@ export class NgxHmDragResizeService {
     },
   ];
 
-  constructor() { }
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.isMobile = /Android|iPhone/i.test(window.navigator.userAgent);
+    }
+  }
 
   setFocus(elm: HTMLElement) {
-    if (this.nowFocusElm.value !== elm) {
-      this.nowFocusElm.next(elm);
+    if (this.nowFocusElm$.value !== elm) {
+      this.nowFocusElm$.next(elm);
     }
   }
 
   clearFocus() {
-    this.nowFocusElm.next(null);
+    this.nowFocusElm$.next(null);
+  }
+}
+
+export function addStyle(_renderer: Renderer2, elm: HTMLElement, style: { [key: string]: string | number }) {
+  if (style) {
+    Object.keys(style).forEach((key) => {
+      const value = style[key];
+      _renderer.setStyle(elm, key, value);
+    });
   }
 }

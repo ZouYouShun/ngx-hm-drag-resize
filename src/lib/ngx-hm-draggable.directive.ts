@@ -2,7 +2,7 @@ import { AfterViewInit, Directive, ElementRef, OnDestroy, Renderer2, Input, Outp
 import { forkJoin, Subscription, fromEvent, merge, Observable } from 'rxjs';
 
 import { NgxHmDragResizeService, Point } from './ngx-hm-drag-resize.service';
-import { tap, finalize, takeUntil, switchMap, map } from 'rxjs/operators';
+import { tap, finalize, takeUntil, switchMap, map, filter } from 'rxjs/operators';
 
 @Directive({
   selector: '[ngx-hm-draggable]'
@@ -45,24 +45,16 @@ export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
           this._service.setFocus(this._elm.nativeElement);
         })
       ),
-      this.bindDrag(elm, this.hm, this.container),
-      // this._service.nowFocusElm.pipe(
-      //   tap((element) => {
-      //     if (element === elm) {
-      //       console.log('!!!');
-      //       elm.style.border = '5px solid red';
-      //     } else {
-      //       elm.style.border = '0';
-      //     }
-      //   })
-      // )
+      this.bindDrag(elm, this.hm),
+      this._service.resizeFromPinch$.pipe(
+        tap(() => this.hm.stop(true))
+      ),
     ).subscribe();
   }
 
   bindDrag(
     elm: HTMLElement,
-    hm: HammerManager,
-    container: HTMLElement
+    hm: HammerManager
   ): Observable<any> {
 
     hm.get('pan').set({ direction: Hammer.DIRECTION_ALL });
@@ -84,25 +76,26 @@ export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
       takeUntil(
         merge(
           fromEvent(hm, 'panend').pipe(
+            filter(() => !!this.toPoint),
             tap(() => {
               this.dragComplete.emit({
-                left: this.toPoint.left || 0,
-                top: this.toPoint.top || 0,
+                left: this.toPoint ? this.toPoint.left : 0,
+                top: this.toPoint ? this.toPoint.top : 0,
               });
               this._renderer.setStyle(elm, 'transform',
                 `translate(0, 0)`
               );
             }),
           ),
-          this._service.resize$
+          this._service.resizeFromPan$
         ))
     );
 
     return panStart$.pipe(
       tap(() => {
         if (this.container) {
-          this.elementRect = container ? elm.getBoundingClientRect() : null;
-          this.containerRect = container ? container.getBoundingClientRect() : null;
+          this.elementRect = this.container ? elm.getBoundingClientRect() : null;
+          this.containerRect = this.container ? this.container.getBoundingClientRect() : null;
 
           this.maxRight = this.containerRect.right - this.containerRect.left - this.elementRect.width;
           this.maxBottom = this.containerRect.bottom - this.containerRect.top - this.elementRect.height;
@@ -116,12 +109,10 @@ export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
       }),
       switchMap(() => panMove$),
       map((e: HammerInput) => this.fixedInArea(e)),
-      tap(() => {
-        this._renderer.setStyle(elm, 'transform',
-          `translate(${this.toPoint.left - this.startStyle.left}px,
+      tap(() => this._renderer.setStyle(elm, 'transform',
+        `translate(${this.toPoint.left - this.startStyle.left}px,
              ${this.toPoint.top - this.startStyle.top}px)`
-        );
-      }),
+      )),
     );
   }
 
