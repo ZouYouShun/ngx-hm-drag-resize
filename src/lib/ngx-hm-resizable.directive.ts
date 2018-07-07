@@ -35,6 +35,7 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
   private toPoint: Destination;
   private delta: Destination;
   private size: Size;
+  private saveSize: Size;
   private nowQuadrant: number;
 
   private singleDirectionElm: HTMLElement[] = [];
@@ -46,6 +47,7 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     Ydeg: 0
   };
 
+  private firstChildTransform: any = {};
   private angle = 0;
 
   private onlyX = false;
@@ -126,9 +128,10 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
 
     const pinchstart$ = fromEvent(hm, 'pinchstart').pipe(
       tap((e: HammerInput) => {
-        this._renderer.setStyle(this.dragElms, 'visibility', 'hidden');
         this._service.resize$.next('pinch');
+
         this.initElement(elm);
+
         centerPoint = {
           x: (this.elementRect.left + (this.elementRect.width / 2)),
           y: (this.elementRect.top + (this.elementRect.height / 2)),
@@ -139,29 +142,33 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     const pinchmove$ = fromEvent(hm, 'pinchmove').pipe(
       takeUntil(fromEvent(hm, 'pinchend').pipe(
         tap((e: HammerInput) => {
-          this._renderer.setStyle(this.dragElms, 'visibility', 'visible');
+          // 把一些資訊存下來
           this.angle = (this.angle + (e.rotation - startAngle)) % 360;
+          this.saveSize = { ...this.size };
 
+          // 因為旋轉了，要設定新的大小出去
           const resizeRect = this.firstChild.getBoundingClientRect();
-
+          // 取得放大縮小的比例
           const elmScale = {
             x: this.size.width / resizeRect.width,
             y: this.size.height / resizeRect.height
           };
+          // 因為外框大小會改變所以要做的縮放
+          this.firstChildTransform.scale = `scale(${elmScale.x}, ${elmScale.y})`;
+          this.setFirstChildTransform();
+
+          // 因大小改變的平移
           this.delta = {
             left: (resizeRect.left - this.elementRect.left),
             top: (resizeRect.top - this.elementRect.top)
           };
-
+          // 新的寬高
           this.size = {
             width: resizeRect.width,
             height: resizeRect.height
           };
-          console.log(e.scale);
+
           this.completeEmit(elm);
-          this._renderer.setStyle(this.firstChild, 'transform',
-            this.firstChild.style.transform + `scale(${elmScale.x}, ${elmScale.y})`);
-          // 把最後的角度存起來
         })
       ))
     );
@@ -194,10 +201,27 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
       }),
       tap((e: HammerInput) => {
         this.setElmStyle(elm);
-        this._renderer.setStyle(this.firstChild, 'transform', ` rotate(${(this.angle + (e.rotation - startAngle)) % 360}deg)`);
+
+        this.firstChildTransform.rotate = `rotate(${(this.angle + (e.rotation - startAngle)) % 360}deg)`;
+        this.setFirstChildTransform();
       }),
     );
 
+  }
+
+  private resetAngleChange(elm: HTMLElement) {
+    if (this.saveSize) {
+      const left = parseInt(elm.style.left, 10);
+      const top = parseInt(elm.style.top, 10);
+      const width = parseInt(elm.style.width, 10);
+      const height = parseInt(elm.style.height, 10);
+      this._renderer.setStyle(elm, 'left', `${left + (width - this.saveSize.width) / 2}px`);
+      this._renderer.setStyle(elm, 'top', `${top + (height - this.saveSize.height) / 2}px`);
+      this._renderer.setStyle(elm, 'width', `${this.saveSize.width}px`);
+      this._renderer.setStyle(elm, 'height', `${this.saveSize.height}px`);
+      this.firstChildTransform = {};
+      this.setFirstChildTransform();
+    }
   }
 
   bindAllResize() {
@@ -253,6 +277,13 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     );
   }
 
+  private setFirstChildTransform() {
+    const transform = Object.keys(this.firstChildTransform).map((k) => {
+      return this.firstChildTransform[k];
+    }).join(' ');
+    this._renderer.setStyle(this.firstChild, 'transform', transform);
+  }
+
   private zoomFixInArea() {
     if (this.toPoint.left < this.containerRect.left) {
       this.delta.left = this.containerRect.left - this.elementRect.left;
@@ -299,7 +330,9 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
       tap((e: HammerInput) => {
         this._service.resize$.next('pan');
         this.onlyX = this.onlyY = false;
+
         this.initElement(elm);
+
         zeroPoint = this.initZeroPoint(type);
         firstQudrant = this.getQuadrant(zeroPoint, { left: e.center.x, top: e.center.y });
       })
@@ -309,7 +342,10 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
       takeUntil(
         merge(
           fromEvent(hm, 'panend').pipe(
-            tap(() => this.completeEmit(elm))
+            tap(() => {
+              this.saveSize = { ...this.size };
+              this.completeEmit(elm);
+            })
           ),
         )
       )
@@ -336,6 +372,9 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
   }
 
   private initElement(elm: HTMLElement) {
+    this._renderer.setStyle(this.dragElms, 'visibility', 'hidden');
+
+    this.resetAngleChange(elm);
     this.containerRect = this.container ? this.container.getBoundingClientRect() : null;
     this.elementRect = elm.getBoundingClientRect();
     this.scale = this.elementRect.height / this.elementRect.width;
@@ -343,6 +382,11 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
       left: parseInt(elm.style.left, 10) || 0,
       top: parseInt(elm.style.top, 10) || 0,
     };
+
+    // init完成，再把angle設定回來
+    this.firstChildTransform.rotate = `rotate(${this.angle}deg)`;
+    this.setFirstChildTransform();
+
   }
 
   private initZeroPoint(type: Point) {
@@ -384,6 +428,7 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     });
     // this._service.complete$.next();
     this._renderer.setStyle(elm, 'transform', `translate(0, 0)`);
+    this._renderer.setStyle(this.dragElms, 'visibility', 'visible');
   }
 
   private getToPoint(e: HammerInput) {
