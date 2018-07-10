@@ -47,7 +47,6 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     Ydeg: 0
   };
 
-  private firstChildTransform: any = {};
   private angle = 0;
 
   private onlyX = false;
@@ -80,6 +79,15 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
 
   private dragElms: HTMLElement;
   private firstChild: HTMLElement;
+
+  private set firstChildTransform(value) {
+    this._firstChildTransform = value;
+    this.setFirstChildTransform();
+  }
+  private get firstChildTransform() {
+    return this._firstChildTransform;
+  }
+  private _firstChildTransform: any = {};
 
   constructor(
     private _elm: ElementRef,
@@ -154,8 +162,10 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
             y: this.size.height / resizeRect.height
           };
           // 因為外框大小會改變所以要做的縮放
-          this.firstChildTransform.scale = `scale(${elmScale.x}, ${elmScale.y})`;
-          this.setFirstChildTransform();
+          this.firstChildTransform = {
+            ...this.firstChildTransform,
+            scale: `scale(${elmScale.x}, ${elmScale.y})`
+          };
 
           // 因大小改變的平移
           this.delta = {
@@ -202,8 +212,10 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
       tap((e: HammerInput) => {
         this.setElmStyle(elm);
 
-        this.firstChildTransform.rotate = `rotate(${(this.angle + (e.rotation - startAngle)) % 360}deg)`;
-        this.setFirstChildTransform();
+        this.firstChildTransform = {
+          ...this.firstChildTransform,
+          rotate: `rotate(${(this.angle + (e.rotation - startAngle)) % 360}deg)`
+        };
       }),
     );
 
@@ -220,7 +232,6 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
       this._renderer.setStyle(elm, 'width', `${this.saveSize.width}px`);
       this._renderer.setStyle(elm, 'height', `${this.saveSize.height}px`);
       this.firstChildTransform = {};
-      this.setFirstChildTransform();
     }
   }
 
@@ -384,9 +395,10 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     };
 
     // init完成，再把angle設定回來
-    this.firstChildTransform.rotate = `rotate(${this.angle}deg)`;
-    this.setFirstChildTransform();
-
+    this.firstChildTransform = {
+      ...this.firstChildTransform,
+      rotate: `rotate(${this.angle}deg)`
+    };
   }
 
   private initZeroPoint(type: Point) {
@@ -408,9 +420,18 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
   }
 
   private setElmStyle(elm: HTMLElement) {
-    this._renderer.setStyle(elm, 'width', `${this.size.width}px`);
-    this._renderer.setStyle(elm, 'height', `${this.size.height}px`);
-    this._renderer.setStyle(elm, 'transform', `translate(${this.delta.left}px, ${this.delta.top}px)`);
+    const scaleX = this.size.width / this.elementRect.width;
+    const scaleY = this.size.height / this.elementRect.height;
+
+    const deltaX = (this.size.width - this.elementRect.width) / 2;
+    const deltaY = (this.size.height - this.elementRect.height) / 2;
+
+    this.firstChildTransform = {
+      ...this.firstChildTransform,
+      scale: `scale(${scaleX}, ${scaleY})`
+    };
+
+    this._renderer.setStyle(elm, 'transform', `translate(${this.delta.left + deltaX}px, ${this.delta.top + deltaY}px)`);
   }
 
   private completeEmit(elm: HTMLElement) {
@@ -429,6 +450,11 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     // this._service.complete$.next();
     this._renderer.setStyle(elm, 'transform', `translate(0, 0)`);
     this._renderer.setStyle(this.dragElms, 'visibility', 'visible');
+
+    // this.firstChildTransform = {
+    //   ...this.firstChildTransform,
+    //   scale: `scale(1)`
+    // };
   }
 
   private getToPoint(e: HammerInput) {
