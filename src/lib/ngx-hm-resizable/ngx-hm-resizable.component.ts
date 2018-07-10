@@ -1,13 +1,24 @@
-import { AfterViewInit, Directive, ElementRef, OnDestroy, Renderer2, EventEmitter, Output, Input } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  Renderer2,
+  EventEmitter, Output, Input, ViewChild, TemplateRef, ContentChild
+} from '@angular/core';
 import { forkJoin, fromEvent, Subscription, Observable, merge } from 'rxjs';
-import { tap, takeUntil, switchMap, map, finalize } from 'rxjs/operators';
+import { tap, takeUntil, switchMap } from 'rxjs/operators';
 
-import { NgxHmDragResizeService, Point, Size, Destination, addStyle } from './ngx-hm-drag-resize.service';
+import { NgxHmDragResizeService, Point, Size, Destination, addStyle } from '../ngx-hm-drag-resize.service';
 
-@Directive({
-  selector: '[ngx-hm-resizable]'
+@Component({
+  selector: 'ngx-hm-resizable',
+  templateUrl: './ngx-hm-resizable.component.html',
+  styleUrls: ['./ngx-hm-resizable.component.scss']
 })
-export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
+export class NgxHmResizableComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('resizeElm') resizeElm: ElementRef;
+  @ContentChild('mainElement') contentElm: ElementRef;
   @Input('resizable-container') container: HTMLElement;
   @Input('reverse') reverse = false;
   @Input('scaling')
@@ -115,11 +126,8 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
   ) { }
 
   ngAfterViewInit(): void {
-    // 如果可以反轉，才要找第一個元素
-    if (this.reverse && (<HTMLElement>this._elm.nativeElement).childElementCount > 0) {
-      this.resizeElement = (<HTMLElement>this._elm.nativeElement).children.item(0) as HTMLElement;
-      this.contentElement = this.resizeElement.children.item(0) as HTMLElement;
-    }
+    this.resizeElement = this.resizeElm.nativeElement;
+    this.contentElement = this.contentElm.nativeElement;
     this.savezIndex = this._elm.nativeElement.style['z-index'];
 
     const obs$ = [
@@ -653,3 +661,4 @@ export class NgxHmResizableDirective implements AfterViewInit, OnDestroy {
     this._renderer.setStyle(elm, 'transform', transform);
   }
 }
+

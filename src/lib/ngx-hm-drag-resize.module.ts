@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 
-import { NgxHmDraggableDirective } from './ngx-hm-draggable.directive';
-import { NgxHmResizableDirective } from './ngx-hm-resizable.directive';
-// import { NgxHmResizableComponent } from './ngx-hm-resizable/ngx-hm-resizable.component';
+import { NgxHmDraggableDirective } from './ngx-hm-draggable/ngx-hm-draggable.directive';
+import { NgxHmResizableComponent } from './ngx-hm-resizable/ngx-hm-resizable.component';
 
 @NgModule({
   imports: [
@@ -11,13 +10,11 @@ import { NgxHmResizableDirective } from './ngx-hm-resizable.directive';
   ],
   declarations: [
     NgxHmDraggableDirective,
-    NgxHmResizableDirective,
-    // NgxHmResizableComponent
+    NgxHmResizableComponent
   ],
   exports: [
     NgxHmDraggableDirective,
-    NgxHmResizableDirective,
-    // NgxHmResizableComponent
+    NgxHmResizableComponent
   ]
 })
 export class NgxHmDragResizeModule {

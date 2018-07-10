@@ -1,7 +1,7 @@
 import { AfterViewInit, Directive, ElementRef, OnDestroy, Renderer2, Input, Output, EventEmitter } from '@angular/core';
 import { forkJoin, Subscription, fromEvent, merge, Observable } from 'rxjs';
 
-import { NgxHmDragResizeService, Point, Destination } from './ngx-hm-drag-resize.service';
+import { NgxHmDragResizeService, Point, Destination } from '../ngx-hm-drag-resize.service';
 import { tap, finalize, takeUntil, switchMap, map, filter } from 'rxjs/operators';
 
 @Directive({
