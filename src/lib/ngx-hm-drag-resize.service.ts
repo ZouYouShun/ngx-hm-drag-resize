@@ -22,8 +22,8 @@ import { isPlatformBrowser } from '@angular/common';
  */
 
 export interface Point {
-  left: number;
-  top: number;
+  left: number | string;
+  top: number | string;
   right?: number;
   bottom?: number;
   width?: number;
@@ -46,6 +46,8 @@ export interface Size {
 })
 export class NgxHmDragResizeService {
 
+  width = 5;
+
   isMobile: boolean;
   resize$ = new Subject();
   nowFocusElm$ = new BehaviorSubject<HTMLElement>(null);
@@ -64,44 +66,44 @@ export class NgxHmDragResizeService {
 
   resizeDragElm: any[] = [
     {
-      left: 0,
-      top: 0,
+      left: `${-this.width}px`,
+      top: `${-this.width}px`,
       cursor: 'nw-resize'
     },
     {
-      left: 'calc(50% - 5px)',
-      top: 0,
+      left: `calc(50% - ${this.width}px)`,
+      top: `${-this.width}px`,
       cursor: 'n-resize'
     },
 
     {
-      right: 0,
-      top: 0,
+      right: `${-this.width}px`,
+      top: `${-this.width}px`,
       cursor: 'ne-resize'
     },
     {
-      right: 0,
-      top: 'calc(50% - 5px)',
+      right: `${-this.width}px`,
+      top: `calc(50% - ${this.width}px)`,
       cursor: 'e-resize'
     },
     {
-      right: 0,
-      bottom: 0,
+      right: `${-this.width}px`,
+      bottom: `${-this.width}px`,
       cursor: 'se-resize'
     },
     {
-      left: 'calc(50% - 5px)',
-      bottom: 0,
+      left: `calc(50% - ${this.width}px)`,
+      bottom: `${-this.width}px`,
       cursor: 's-resize'
     },
     {
-      left: 0,
-      bottom: 0,
+      left: `${-this.width}px`,
+      bottom: `${-this.width}px`,
       cursor: 'sw-resize'
     },
     {
-      left: 0,
-      top: 'calc(50% - 5px)',
+      left: `${-this.width}px`,
+      top: `calc(50% - ${this.width}px)`,
       cursor: 'w-resize'
     },
   ];
