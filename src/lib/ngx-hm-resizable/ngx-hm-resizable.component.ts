@@ -21,6 +21,25 @@ export class NgxHmResizableComponent implements AfterViewInit, OnDestroy {
   @ContentChild('mainElement') contentElm: ElementRef;
   @Input('resizable-container') container: HTMLElement;
   @Input('reverse') reverse = false;
+  // 決定是否停用 resize
+  @Input('resizable-enable') set resizableEnable(value) {
+    if (this.hmList.length > 0) {
+      this.hmList.forEach(hm => {
+        hm.set({ enable: value });
+      });
+      if (!value) {
+        this._renderer.setStyle(this.dragElms, 'visibility', 'hidden');
+      } else {
+        this._renderer.setStyle(this.dragElms, 'visibility', 'visible');
+      }
+    }
+    this._enabled = value;
+  }
+  get resizableEnable() {
+    return this._enabled;
+  }
+  private _enabled = true;
+  @Input('pinchEnable') pinchEnable = false;
   @Input('scaling')
   get scaling() {
     return this._scaling;
@@ -72,17 +91,17 @@ export class NgxHmResizableComponent implements AfterViewInit, OnDestroy {
     // only when value is change set value
     if (this.isFocus !== value) {
       if (value) {
-        this.hmList.forEach((hm) => {
-          hm.set({ enable: true });
-        });
+        // this.hmList.forEach((hm) => {
+        //   hm.set({ enable: this.resizableEnable });
+        // });
         this._renderer.setStyle(this._elm.nativeElement, 'z-index', this.savezIndex + 1);
-        this._renderer.setStyle(this.dragElms, 'visibility', 'visible');
+        this._renderer.setStyle(this.dragElms, 'display', 'block');
       } else {
-        this.hmList.forEach((hm) => {
-          hm.set({ enable: false });
-        });
+        // this.hmList.forEach((hm) => {
+        //   hm.set({ enable: false });
+        // });
         this._renderer.setStyle(this._elm.nativeElement, 'z-index', this.savezIndex);
-        this._renderer.setStyle(this.dragElms, 'visibility', 'hidden');
+        this._renderer.setStyle(this.dragElms, 'display', 'none');
       }
     }
     this._isFocus = value;
@@ -144,11 +163,15 @@ export class NgxHmResizableComponent implements AfterViewInit, OnDestroy {
       this.bindAllResize()
     ];
 
-    if (this._service.isMobile) {
+    // 如果有啟用pinch才綁定
+    if (this.pinchEnable && this._service.isMobile) {
       obs$.push(this.bindZoomInOut(this._elm.nativeElement));
     }
 
     this.sub = forkJoin(obs$).subscribe();
+
+    // 當綁定完所有之後，再次設定resize去觸發先是隱藏
+    this.resizableEnable = this.resizableEnable;
   }
 
   bindZoomInOut(

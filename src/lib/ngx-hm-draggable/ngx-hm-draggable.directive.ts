@@ -10,6 +10,21 @@ import { tap, finalize, takeUntil, switchMap, map, filter } from 'rxjs/operators
 export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
 
   @Input('draggable-container') container: HTMLElement;
+  @Input('draggable-enable') set dragEnable(value) {
+    if (this.hm) {
+      this.hm.set({ enable: value });
+      // if (!value) {
+      //   this._renderer.setStyle(this.dragElms, 'visibility', 'hidden');
+      // } else {
+      //   this._renderer.setStyle(this.dragElms, 'visibility', 'visible');
+      // }
+    }
+    this._enabled = value;
+  }
+  get dragEnable() {
+    return this._enabled;
+  }
+  private _enabled = true;
   @Output() dragComplete = new EventEmitter();
 
   private sub$: Subscription;
@@ -41,7 +56,7 @@ export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
 
     this.sub$ = forkJoin(
       fromEvent(this.hm, 'tap').pipe(
-        tap((e: HammerInput) => {
+        tap(() => {
           this._service.setFocus(this._elm.nativeElement);
         })
       ),
@@ -50,6 +65,8 @@ export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
         tap(() => this.hm.stop(true))
       ),
     ).subscribe();
+
+    this.dragEnable = this.dragEnable;
   }
 
   bindDrag(
