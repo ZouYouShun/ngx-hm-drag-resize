@@ -19,7 +19,7 @@ import { NgxHmDragResizeService, Point, Size, Destination, addStyle } from '../n
 export class NgxHmResizableComponent implements AfterViewInit, OnDestroy {
   @ViewChild('resizeElm') resizeElm: ElementRef;
   @ContentChild('mainElement') contentElm: ElementRef;
-  @Input('resizable-container') container: HTMLElement;
+  @Input('container') container: HTMLElement;
   @Input('reverse') reverse = false;
   // 決定是否停用 resize
   @Input('resizable-enable') set resizableEnable(value) {
@@ -39,7 +39,7 @@ export class NgxHmResizableComponent implements AfterViewInit, OnDestroy {
     return this._enabled;
   }
   private _enabled = true;
-  @Input('pinchEnable') pinchEnable = false;
+  @Input('pinch-enable') pinchEnable = false;
   @Input('scaling')
   get scaling() {
     return this._scaling;

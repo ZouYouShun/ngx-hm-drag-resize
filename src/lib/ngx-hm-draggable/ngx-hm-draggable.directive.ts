@@ -9,7 +9,7 @@ import { tap, finalize, takeUntil, switchMap, map, filter } from 'rxjs/operators
 })
 export class NgxHmDraggableDirective implements AfterViewInit, OnDestroy {
 
-  @Input('draggable-container') container: HTMLElement;
+  @Input('container') container: HTMLElement;
   @Input('draggable-enable') set dragEnable(value) {
     if (this.hm) {
       this.hm.set({ enable: value });
